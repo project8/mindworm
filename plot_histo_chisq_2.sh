@@ -4,13 +4,14 @@
 
 file=$1
 output=$2
+title=$3
 totalcounts=`python histo_count.py $file -1`
 echo "total counts is $totalcounts"
 
 gnuplot << GNUPLOTCOMMANDSHERE
 set terminal png
 set output "$output"
-set title "Power Distribution"
+set title "$title"
 set xlabel "Power (sigma)"
 set ylabel "Counts"
 set log y
