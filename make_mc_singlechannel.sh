@@ -15,17 +15,17 @@ done
 gnuplot << GNUPLOTHERE
 set terminal png
 set output "mc_out.png"
-set title "Normalized Counts Above Cut For Simulated Signals\n Various powers,  40Hz, 100K noise temp, 2s of data"
+set title "Normalized Counts Above Cut For Simulated Signals\n Various powers, 1 Channel Single Bin\ 1Hz, 100K noise temp, 20s of data"
 set xlabel "Signal Power (in fW)
 set ylabel "(Counts-<Counts>)/sqrt(<Counts>)"
 set label at screen 0.3,0.3 font ",50" "SIMULATION"
 set label at screen 0.3,0.6 font ",50" "SIMULATION"
 set label at screen 0.6,0.3 font ",50" "SIMULATION"
 set label at screen 0.6,0.6 font ",50" "SIMULATION"
-plot "$output" using (\$1*1e15):((\$2-\$6*exp(-10))/sqrt(\$6*exp(-10))) with lines title "Counts 10+ Sigma",\
-"$output" using (\$1*1e15):((\$3-\$6*exp(-12))/sqrt(\$6*exp(-12))) with lines title "Counts 12+ Sigma",\
-"$output" using (\$1*1e15):((\$4-\$6*exp(-15))/sqrt(\$6*exp(-15))) with lines title "Counts 15+ Sigma",\
-"$output" using (\$1*1e15):((\$5-\$6*exp(-17))/sqrt(\$6*exp(-17))) with lines title "Counts 17+ Sigma"
+plot "$output" using (\$1*1e15):((\$2-\$6*exp(-10))/sqrt(\$6*exp(-10))) with lines title "Counts 4+ Sigma",\
+"$output" using (\$1*1e15):((\$3-\$6*exp(-12))/sqrt(\$6*exp(-12))) with lines title "Counts 4.5+ Sigma",\
+"$output" using (\$1*1e15):((\$4-\$6*exp(-15))/sqrt(\$6*exp(-15))) with lines title "Counts 5+ Sigma",\
+"$output" using (\$1*1e15):((\$5-\$6*exp(-17))/sqrt(\$6*exp(-17))) with lines title "Counts 5.5+ Sigma"
 
 #plot "$output" using (\$1*1e15):(\$2/(\$6*exp(-10))) with lines title "Counts 10+ Sigma",\
 #"$output" using (\$1*1e15):(\$3/(\$6*exp(-12))) with lines title "Counts 12+ Sigma",\
