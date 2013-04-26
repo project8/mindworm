@@ -42,5 +42,4 @@ do
     echo "$offset MHz to $stopfreq MHz score: $thedif"
 done
 
-echo "max cand is $maxx"
 ./powerline_elektronjager -i $sigegg -b $bglev -c standard.conv -p sig -d $maxx
