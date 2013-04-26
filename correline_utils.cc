@@ -1,5 +1,6 @@
 #include "correline_utils.hh"
 #include <math.h>
+#include <string.h>
 
 
 //-------------Background------------
@@ -200,6 +201,67 @@ void PowerCandidateList::saveToFile(string fname,long long npoints)
 	}
 	fout.close();
 }
+
+void PowerCandidateList::saveToJSON(string fname,long long npoints,string eggname,int recordsize,double record_time,double time_uncert)
+{
+    yajl_gen candjson=yajl_gen_alloc(NULL);
+    yajl_gen_config(candjson,yajl_gen_beautify,1);
+    yajl_gen_map_open(candjson);
+    make_json_string_entry(candjson,"eggname",eggname.c_str());
+    make_json_integer_entry(candjson,"recordsize",recordsize);
+    yajl_gen_string(candjson,(unsigned char*)("candidates"),strlen("candidates"));
+    yajl_gen_array_open(candjson);
+	for(PowerCandidateList::iterator it=begin();it!=end();it++) {
+        yajl_gen_map_open(candjson);
+        yajl_gen_string(candjson,(unsigned char*)("support"),strlen("support"));
+        yajl_gen_array_open(candjson);
+        int startrec=(int)((*it).time/record_time);
+        int startsample=(int)(((double)recordsize)*(((*it).time-((double)startrec*record_time)))/record_time);
+        int endrec=startrec;
+        int endsample=startsample+(*it).duration*recordsize/record_time;
+        while(endsample>recordsize) {
+            endsample-=recordsize;
+            endrec++;
+        }
+        yajl_gen_integer(candjson,startrec); //start record
+        yajl_gen_integer(candjson,startsample); //start sample
+        yajl_gen_integer(candjson,endrec); //end record
+        yajl_gen_integer(candjson,endsample); //end sample
+        yajl_gen_array_close(candjson);
+        yajl_gen_string(candjson,(unsigned char*)("frequency"),strlen("frequency"));
+        yajl_gen_array_open(candjson);
+        yajl_gen_number_forreals(candjson,(*it).frequency); //start 
+        yajl_gen_number_forreals(candjson,(*it).frequency); //end
+        yajl_gen_number_forreals(candjson,0); //uncertainty
+        yajl_gen_number_forreals(candjson,0); //end uncertainty
+        yajl_gen_array_close(candjson);
+        yajl_gen_string(candjson,(unsigned char*)("timing"),strlen("timing"));
+        yajl_gen_array_open(candjson);
+        yajl_gen_number_forreals(candjson,(*it).time); //start 
+        yajl_gen_number_forreals(candjson,(*it).time+(*it).duration); //end
+        yajl_gen_number_forreals(candjson,time_uncert); //uncertainty
+        yajl_gen_number_forreals(candjson,time_uncert); //end uncertainty
+        yajl_gen_array_close(candjson);
+
+
+        make_json_numeric_entry(candjson,"magnitude",(*it).magnitude);
+        make_json_numeric_entry(candjson,"confidence",(*it).probability);
+        
+
+//		fout << (*it).frequency << " " << (*it).time << " " << (*it).magnitude << " " <<  (*it).probability << endl;
+        yajl_gen_map_close(candjson);
+	}
+    yajl_gen_array_close(candjson);
+    yajl_gen_map_close(candjson);
+    const unsigned char *buf;
+    size_t len;
+    yajl_gen_get_buf(candjson,&buf,&len);
+    FILE *file=fopen(fname.c_str(),"w");
+    fwrite(buf,1,len,file);
+    fclose(file);
+    yajl_gen_clear(candjson);
+    yajl_gen_free(candjson);
+}
 	
 PowerCandidateList PowerCandidateList::condenseByDistance(double freqscale,double timescale)
 {
@@ -220,4 +282,30 @@ PowerCandidateList PowerCandidateList::condenseByDistance(double freqscale,doubl
 			ret.insert(*it);
 	}
 	return ret;
+}
+
+//-----some json helper functions---
+//
+void make_json_string_entry(yajl_gen gen,const char *key,const char *value)
+{
+    yajl_gen_string(gen,(unsigned char*)key,strlen(key));
+    yajl_gen_string(gen,(unsigned char*)value,strlen(value));
+}
+
+void make_json_numeric_entry(yajl_gen gen,const char *key,double value)
+{
+    yajl_gen_string(gen,(unsigned char*)key,strlen(key));
+    yajl_gen_number_forreals(gen,value);
+}
+
+void make_json_integer_entry(yajl_gen gen,const char *key,int value)
+{
+    yajl_gen_string(gen,(unsigned char*)key,strlen(key));
+    yajl_gen_integer(gen,value);
+}
+void yajl_gen_number_forreals(yajl_gen gen,double num)
+{
+    char buffer[256];
+    sprintf(buffer,"%g",num);
+    yajl_gen_number(gen,buffer,strlen(buffer));
 }

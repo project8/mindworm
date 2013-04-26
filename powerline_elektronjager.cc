@@ -25,6 +25,9 @@ double frequency_cut_high=80; //in mhz
 string prefix="temp_";
 double cand_cut=-1;
 //----------------------------
+//
+double tail_norm=1.0;
+double tail_slope=1.0;
 
 Histogram *powers_1;
 Histogram *powers_2;
@@ -91,10 +94,10 @@ int main(int argc,char *argv[])
 		convolved_1[i].init(1000,0,20);
 		convolved_2[i].init(1000,0,20);
 	}
-	for(int i=0;i<n_freq_divisions;i++) {
-		cout << "histo starts " << i << " " << histo_starts[i] << endl;
-		cout << "histo stops " << i << " " << histo_stops[i] << endl;
-	}
+//	for(int i=0;i<n_freq_divisions;i++) {
+//		cout << "histo starts " << i << " " << histo_starts[i] << endl;
+//		cout << "histo stops " << i << " " << histo_stops[i] << endl;
+//	}
 	//------
 
 	//-----figure out where my cuts are----------
@@ -119,6 +122,8 @@ int main(int argc,char *argv[])
 	//
 	
 	//---------------------
+    double fft_timelength=((double)correlator.fft_size)/(1e6*correlator.sampling_rate_mhz);
+    cout << "fft_timelength " << fft_timelength << endl;
 	long total_fft_count=0;
     while(egg->ReadRecord()) {
 		//perform power spectrum
@@ -165,7 +170,8 @@ int main(int argc,char *argv[])
 					double f=correlator.output_waterfall.freq_step*((double)j)/1e6;
 					double t=total_time+correlator.output_waterfall.time_step*((double)i);
 //					cout << "f t " << f << " " << t << " " << j << " " << i << endl;
-					candidates.push(Candidate(f,t,convolution[index]));
+					double logprob=log(tail_norm)-convolution[index]*tail_slope;
+					candidates.push(Candidate(f,t,convolution[index],fft_timelength));
 				}
 
 				//histogram power
@@ -194,13 +200,16 @@ int main(int argc,char *argv[])
 		convolved_1[k].saveToFile(newprefix+"_convolved_1_histo.txt");
 		convolved_2[k].saveToFile(newprefix+"_convolved_2_histo.txt");
 	}
-	candidates.saveToFile(prefix+"_candidates.txt");
+    if(candidates.size()>0) {
+        candidates.saveToJSON(prefix+"_candidates.json",0,input_eggname,correlator.record_size,((double)correlator.record_size)/(correlator.sampling_rate_mhz*1e6),fft_timelength);
+    }
+//	candidates.saveToFile(prefix+"_candidates.txt");
 }
 
 int handle_options(int argc,char *argv[])
 {
 	int c;
-    const char *okopts="i:ab:p:c:d:";
+    const char *okopts="i:ab:p:c:d:y:z;";
     while((c=getopt(argc,argv,okopts))!=-1)
 	switch(c)
 	{
@@ -222,6 +231,12 @@ int handle_options(int argc,char *argv[])
 		case 'd':
 			cand_cut=atof(optarg);
 			break;
+        case 'y':
+            tail_norm=atof(optarg);
+            break;
+        case 'z':
+            tail_slope=atof(optarg);
+            break;
 		case '?':
 			if(index(okopts,optopt)==NULL)
 				fprintf(stderr,"{ error: \"unknown option: %c\n, aborting\"}",optopt);
@@ -243,6 +258,9 @@ void print_usage()
 	cout << "	-b (filename) sets the background" << endl;
 	cout << "   -p (file prefix) sets the prefix to output files" << endl;
     cout << "   -d (candidate cut) sets the candidate cut" << endl;
+    cout << "   -y (normalization) normalization of tail fit" << endl;
+    cout << "   -z (normalization) slope of tail fit" << endl;
 }
+
 
 

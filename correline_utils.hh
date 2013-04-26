@@ -8,6 +8,8 @@
 #include <sstream>
 #include <fstream>
 #include "Waterfall.hh"
+#include <yajl/yajl_gen.h>
+#include <yajl/yajl_tree.h>
 using namespace std;
 
 class Background
@@ -38,13 +40,15 @@ class Candidate
 {
 public:
 	Candidate() {};
-	Candidate(double f,double t,double m) {
+	Candidate(double f,double t,double m,double d) {
 		frequency=f;
 		time=t;
 		magnitude=m;
+        duration=d;
 	};
 	double frequency;
 	double time;
+    double duration;
 	double magnitude;
 	int event_no;
 	//--optional parameters--
@@ -66,7 +70,13 @@ public:
 	unsigned int max_length;
 	void saveToFile(string fname,long long npoints=0);
 	PowerCandidateList condenseByDistance(double freqscale,double timescale);
+    void saveToJSON(string fname,long long npoints,string eggname,int recordsize,double record_time,double time_uncert);
 };
 
 vector<Candidate> loadCandidateFile(string fname);
 vector<Candidate> loadCandidateFile(string fname,long long &npoints);
+void make_json_string_entry(yajl_gen gen,const char *key,const char *value);
+void make_json_numeric_entry(yajl_gen gen,const char *key,double value);
+void make_json_integer_entry(yajl_gen gen,const char *key,int value);
+void make_json_integer_entry(yajl_gen gen,const char *key,int value);
+void yajl_gen_number_forreals(yajl_gen gen,double num);
