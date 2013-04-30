@@ -23,6 +23,10 @@ bglev="`basename $bgegg`".bg_level
 countstofit=10000
 countsforcand=200
 maxx=0;
+bghistos="bg_offset20_convolved_powers_histo.txt bg_offset40_convolved_powers_histo.txt bg_offset60_convolved_powers_histo.txt"
+combined_bg_histo_name="bg_combined_histos"
+sighistos="sig_offset20_convolved_powers_histo.txt sig_offset40_convolved_powers_histo.txt sig_offset60_convolved_powers_histo.txt"
+combined_sig_histo_name="sig_combined_histos"
 for offset in 20 30 40 50 60
 do
     bgfile="bg_offset"$offset"_convolved_powers_histo.txt"
@@ -42,4 +46,18 @@ do
     echo "$offset MHz to $stopfreq MHz score: $thedif"
 done
 
-./powerline_elektronjager -i $sigegg -b $bglev -c standard.conv -p sig -d $maxx
+python combine_histograms.py $bghistos > $combined_bg_histo_name
+python combine_histograms.py $sighistos > $combined_sig_histo_name
+bgx=`python get_histogram_x_with_count.py $combined_bg_histo_name $countstofit`
+startbgx=`echo $bgx | awk '{print $1}'`
+#sigx=`python get_histogram_x_with_count.py $combined_sig_histo_name $countstofit`
+#startsigx=`echo $bgx | awk '{print $1}'`
+#echo "startbg x: $startbgx"
+#TODO scale normalization if bg and sig file aren't the same size
+paramsbg=`./fit_histo $combined_bg_histo_name $startbgx`
+paramssig=`./fit_histo $combined_sig_histo_name $startbgx`
+#echo "paramsbg $paramsbg"
+#echo "paramsbg $paramssig"
+#echo "sending ""$paramsbg $paramssig"
+./powerline_elektronjager -i $sigegg -b $bglev -c standard.conv -p sig -d $maxx -y "$paramsbg $paramssig"
+echo "candidates saved to sig_candidates.json"

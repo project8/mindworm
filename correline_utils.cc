@@ -265,22 +265,31 @@ void PowerCandidateList::saveToJSON(string fname,long long npoints,string eggnam
 	
 PowerCandidateList PowerCandidateList::condenseByDistance(double freqscale,double timescale)
 {
+    PowerCandidateList tosearch=(*this);
 	PowerCandidateList ret;
-	for(iterator it=begin();it!=end();it++) {
-		iterator neighbor=ret.end();
-		for(iterator jt=ret.begin();jt!=ret.end();jt++) {
-			if(fabs((*jt).frequency-(*it).frequency)<freqscale)
-			if(fabs((*jt).time-(*it).time)<timescale)
-				neighbor=jt;
-		}
-		if(neighbor!=ret.end()) {
-			if((*neighbor).magnitude<(*it).magnitude) {
-				ret.erase(neighbor);
-				ret.insert((*it));
-			}
-		} else
-			ret.insert(*it);
+    size_t old_size=size();
+    size_t new_size=size()-1;
+    while(new_size!=old_size) {
+        old_size=new_size;
+
+	for(reverse_iterator it=tosearch.rbegin();it!=tosearch.rend();it++) {
+        Candidate toadd=(*it);
+        reverse_iterator comp=it;
+        comp++;
+        for(;comp!=tosearch.rend();comp++) {
+			if(fabs((*it).frequency-(*comp).frequency)<freqscale)
+			if(fabs((*it).time-(*comp).time)<timescale) {
+                toadd.frequency=0.5*(toadd.frequency+(*comp).frequency);
+                toadd.time=0.5*(toadd.time+(*comp).time);
+                toadd.duration+=(*comp).duration;
+                tosearch.erase(*comp);
+            }
+        }
+        ret.insert(toadd);
 	}
+
+        new_size=size();
+    }
 	return ret;
 }
 

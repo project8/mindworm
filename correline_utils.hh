@@ -40,11 +40,12 @@ class Candidate
 {
 public:
 	Candidate() {};
-	Candidate(double f,double t,double m,double d) {
+	Candidate(double f,double t,double m,double d,double prob=0) {
 		frequency=f;
 		time=t;
 		magnitude=m;
         duration=d;
+        probability=prob;
 	};
 	double frequency;
 	double time;
