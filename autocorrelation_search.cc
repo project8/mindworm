@@ -32,6 +32,8 @@ public:
     float *fft_input;
     fftwf_complex *fft_output;
     float *power_spectra;
+    double *power_spectra_sum;
+    uint power_spectra_sum_count;
     fftwf_plan fft_plan;
     uint fft_input_size;
     uint fft_output_size;
@@ -86,9 +88,19 @@ int main(int argc,char *argv[])
     }
 
     //output result
+    //power spectrum
+    /*
+    for(uint i=0;i<power_producer.fft_output_size;i++) {
+        cout << i << " " << power_producer.power_spectra_sum[i]/((double)power_producer.power_spectra_sum_count) << endl;
+    }
+    */
+
+    //timespace correlation
+//    /*
     for(uint i=0;i<timespace_maker.size;i++) {
         cout << i << " " << timespace_maker.timespace_sum[i]/((double)timespace_maker.sum_counts) << endl;
     }
+ //   */
 
 }
 
@@ -149,11 +161,19 @@ void PowerSpectrumProducer::init(const Monarch *egg,uint myfftsize)
     //create the fft plan
     int fft_input_size_i=fft_input_size;
     fft_plan=fftwf_plan_many_dft_r2c(1,&fft_input_size_i,nffts_per_event,fft_input,NULL,1,fft_input_size,fft_output,NULL,1,fft_output_size,FFTW_ESTIMATE);
+
+    //make space for the average
+    power_spectra_sum=new double[fft_output_size];
+    for(uint i=0;i<fft_output_size;i++) {
+        power_spectra_sum[i]=0;
+    }
+    power_spectra_sum_count=0;
 }
 
 void PowerSpectrumProducer::process(const Monarch *egg)
 {
     const MonarchRecord *event=egg->GetRecordSeparateOne();
+   // const MonarchRecord *event=egg->GetRecordInterleaved();
     //convert data to floats
    for(uint i=0;i<record_size;i++)
        fft_input[i]=(float)(event->fData[i])-128.0;
@@ -165,6 +185,13 @@ void PowerSpectrumProducer::process(const Monarch *egg)
 	   uint k=i*fft_output_size+j;
 	   power_spectra[k]=fft_output[k][0]*fft_output[k][0]+fft_output[k][1]*fft_output[k][1];
        }
+   //update sum
+   for(uint i=0;i<nffts_per_event;i++) {
+   for(uint j=0;j<fft_output_size;j++) {
+       power_spectra_sum[j]+=power_spectra[j+i*fft_output_size];
+   }
+   power_spectra_sum_count++;
+   }
    //done.  user can extract values from power spectra themself
 }
 
@@ -191,6 +218,11 @@ void PowerSpectrumToTimeSpace::init(PowerSpectrumProducer *psp)
 
 void PowerSpectrumToTimeSpace::process(PowerSpectrumProducer *psp)
 {
+    //zeroth bin contains no information
+    for(uint j=0;j<nffts_per_event;j++)
+        psp->power_spectra[j*psp->fft_output_size]=0;
+    //perform transform
+
     fftwf_execute(fft_plan);
     for(uint j=0;j<nffts_per_event;j++)
     for(uint i=0;i<size;i++) {
